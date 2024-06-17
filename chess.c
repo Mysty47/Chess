@@ -17,7 +17,6 @@ int blackMoves = 0;
 int whiteKingChecks = 0;
 int blackKingChecks = 0;
 int depth = 2;
-void initializeBoard(char **board);
 void printBoard(char **board);
 typedef struct {
   int srcX, srcY, destX, destY;
@@ -64,27 +63,15 @@ void loadGameFromFile(const char *filename) {
   fclose(file);
 }
 
-void replayGame(char board[size + 1][size + 1]) {
-    initializeBoard(board);
-
-    for (int i = 0; i < moveCount; i++) {
-        int srcX = moveList[i].srcX;
-        int srcY = moveList[i].srcY;
-        int destX = moveList[i].destX;
-        int destY = moveList[i].destY;
-        char piece = moveList[i].piece;
-
-        // Изчистване на старата позиция
-        board[srcX][srcY] = '.';
-
-        // Преместване на фигурата на новата позиция
-        board[destX][destY] = piece;
-
-        printBoard(board);
-        printf("Move %d: %c%d -> %c%d (Piece: %c)\n", i + 1,
-               srcY + 'a' - 1, srcX,
-               destY + 'a' - 1, destX, piece);
-    }
+void replayGame(char **board) {
+  for (int i = 0; i < moveCount; i++) {
+    board[moveList[i].destX][moveList[i].destY] = moveList[i].piece;
+    board[moveList[i].srcX][moveList[i].srcY] = '.';
+    printBoard(board);
+    printf("Move %d: %c%d -> %c%d (Piece: %c)\n", i + 1,
+           moveList[i].srcY + 'a' - 1, moveList[i].srcX,
+           moveList[i].destY + 'a' - 1, moveList[i].destX, moveList[i].piece);
+  }
 }
 
 int Start(int *c) {
@@ -112,13 +99,13 @@ int Start(int *c) {
 
       switch (sc) {
       case 1:
-        size = 7;
+        size = 6;
         break;
       case 2:
-        size = 9;
+        size = 8;
         break;
       case 3:
-        size = 10;
+        size = 9;
         break;
       default:
         printf("\nInvalid size choice.\n");
@@ -303,55 +290,55 @@ int will_kings_touch(char **board, int dX, int dY, int sX, int sY) {
 }
 
 int willKingBeInCheck(char **board, int kX, int kY, int destX, int destY) {
-    for(int i = destX + 1; i < size; i++) {
-        board[kingX][kingY] = '.';
-        if(board[i][destY] == 'T') {
-            board[kingX][kingY] = 'k';
-            return 0;
-        }
-        if(board[i][destY] != '.') {
-            board[kingX][kingY] = 'k';
-            break;
-        }
-        board[kingX][kingY] = 'k';
+  for (int i = destX + 1; i < size; i++) {
+    board[kingX][kingY] = '.';
+    if (board[i][destY] == 'T') {
+      board[kingX][kingY] = 'k';
+      return 0;
     }
-    for(int i = destX - 1; i >= 0; i--) {
-        board[kingX][kingY] = '.';
-        if(board[i][destY] == 'T') {
-            board[kingX][kingY] = 'k';
-            return 0;
-        }
-        if(board[i][destY] != '.') {
-            board[kingX][kingY] = 'k';
-            break;
-        }
-        board[kingX][kingY] = 'k';
+    if (board[i][destY] != '.') {
+      board[kingX][kingY] = 'k';
+      break;
     }
-    for(int i = destY + 1; i < size; i++) {
-        board[kingX][kingY] = '.';
-        if(board[destX][i] == 'T') {
-            board[kingX][kingY] = 'k';
-            return 0;
-        }
-        if(board[destX][i] != '.') {
-            board[kingX][kingY] = 'k';
-            break;
-        }
-        board[kingX][kingY] = 'k';
+    board[kingX][kingY] = 'k';
+  }
+  for (int i = destX - 1; i >= 0; i--) {
+    board[kingX][kingY] = '.';
+    if (board[i][destY] == 'T') {
+      board[kingX][kingY] = 'k';
+      return 0;
     }
-    for(int i = destY - 1; i >= 0; i--) {
-        board[kingX][kingY] = '.';
-        if(board[destX][i] == 'T') {
-            board[kingX][kingY] = 'k';
-            return 0;
-        }
-        if(board[destX][i] != '.') {
-            board[kingX][kingY] = 'k';
-            break;
-        }
-        board[kingX][kingY] = 'k';
+    if (board[i][destY] != '.') {
+      board[kingX][kingY] = 'k';
+      break;
     }
-    return 1;
+    board[kingX][kingY] = 'k';
+  }
+  for (int i = destY + 1; i < size; i++) {
+    board[kingX][kingY] = '.';
+    if (board[destX][i] == 'T') {
+      board[kingX][kingY] = 'k';
+      return 0;
+    }
+    if (board[destX][i] != '.') {
+      board[kingX][kingY] = 'k';
+      break;
+    }
+    board[kingX][kingY] = 'k';
+  }
+  for (int i = destY - 1; i >= 0; i--) {
+    board[kingX][kingY] = '.';
+    if (board[destX][i] == 'T') {
+      board[kingX][kingY] = 'k';
+      return 0;
+    }
+    if (board[destX][i] != '.') {
+      board[kingX][kingY] = 'k';
+      break;
+    }
+    board[kingX][kingY] = 'k';
+  }
+  return 1;
 }
 
 int isValidMove(char **board, int srcX, int srcY, int destX, int destY,
@@ -376,104 +363,114 @@ int isValidMove(char **board, int srcX, int srcY, int destX, int destY,
     return 0;
   }
 
-  if(board[srcX][srcY] == 'K' || board[srcX][srcY] == 'k') {
+  if (board[srcX][srcY] == 'K' || board[srcX][srcY] == 'k') {
 
-        if(destX > srcX + 1 || destX < srcX - 1){
-            return 0;
-        }
-
-        if(destY > srcY + 1 || destY < srcY - 1){
-            return 0;
-        }
-
-        if(board[srcX][srcY] == 'K') {
-            if(board[destX][destY] == 'T') {
-               return 0; 
-            }
-            if(turn == 1) {
-                return 0;
-            }
-        }
-        if(board[destX][destY] == '.' || board[destX][destY] == 'T') {
-            if(will_kings_touch(board, destX, destY, srcX, srcY)) {
-                return 0;
-            }
-        }
-
+    if (destX > srcX + 1 || destX < srcX - 1) {
+      return 0;
     }
 
-  if(board[srcX][srcY] == 'k' || board[srcX][srcY] == 'K') {
-       if(board[destX][destY] == 'a' || board[destX][destY] == 'b' || board[destX][destY] == 'c' || board[destX][destY] == 'd' || board[destX][destY] == 'e' || board[destX][destY] == 'f' || board[destX][destY] == 'g' || board[destX][destY] == 'h' || board[destX][destY] == '1' || board[destX][destY] == '2' || board[destX][destY] == '3' || board[destX][destY] == '4' || board[destX][destY] == '5' || board[destX][destY] == '6' || board[destX][destY] == '7' || board[destX][destY] == '8'){
-            return 0;
-        }
+    if (destY > srcY + 1 || destY < srcY - 1) {
+      return 0;
     }
 
-  if(board[srcX][srcY] == 'k') {
-        if(turn == 0) {
-            return 0;
-        }
-       return willKingBeInCheck(board, kingX, kingY, destX, destY);
-    }
-
-  // Check specific rules for 'T' (rook-like piece)
-  if(board[srcX][srcY] == 'T') {
-        if(destX != srcX && destY != srcY) {
-            return 0;
-        }
-        if(board[destX][destY] == 'k' || board[destX][destY] == 'T' || board[destX][destY] == 'K' || board[destX][destY] == 'a' || board[destX][destY] == 'b' || board[destX][destY] == 'c' || board[destX][destY] == 'd' || board[destX][destY] == 'e' || board[destX][destY] == 'f' || board[destX][destY] == 'g' || board[destX][destY] == 'h' || board[destX][destY] == '1' || board[destX][destY] == '2' || board[destX][destY] == '3' || board[destX][destY] == '4' || board[destX][destY] == '5' || board[destX][destY] == '6' || board[destX][destY] == '7' || board[destX][destY] == '8'){
-            return 0;
-        }
-        if(turn == 1) {
-            return 0;
-        }
-        if(srcY == destY) {
-            int temp = (srcX > destX) ? -1 : 1;
-            for(int i = srcX + temp; i != destX; i += temp) {
-                if(board[i][srcY] != '.') {
-                    return 0;
-                }
-            }
-        } else if(srcX == destX) {
-            int temp = (srcY > destY) ? -1 : 1;
-            for(int i = srcY + temp; i != destY; i += temp) {
-                if(board[srcX][i] != '.') {
-                    return 0;
-                }
-            }
-        }
-    }
-
-    // Simulate the move to check if it leaves own king in check
-    char temp = board[destX][destY];
-    board[destX][destY] = board[srcX][srcY];
-    board[srcX][srcY] = '.';
-
-    // Find the position of the own king
-    int kingX = -1, kingY = -1;
-    for (int i = 0; i < size; i++) {
-      for (int j = 0; j < size; j++) {
-        if ((turn == 0 && board[i][j] == 'K') ||
-            (turn == 1 && board[i][j] == 'k')) {
-          kingX = i;
-          kingY = j;
-          break;
-        }
+    if (board[srcX][srcY] == 'K') {
+      if (board[destX][destY] == 'T') {
+        return 0;
       }
-      if (kingX != -1)
-        break;
+      if (turn == 1) {
+        return 0;
+      }
     }
-
-
-    // Undo the move
-    board[srcX][srcY] = board[destX][destY];
-    board[destX][destY] = temp;
-
-
-  return 1;
-
+    if (board[destX][destY] == '.' || board[destX][destY] == 'T') {
+      if (will_kings_touch(board, destX, destY, srcX, srcY)) {
+        return 0;
+      }
+    }
   }
 
+  if (board[srcX][srcY] == 'k' || board[srcX][srcY] == 'K') {
+    if (board[destX][destY] == 'a' || board[destX][destY] == 'b' ||
+        board[destX][destY] == 'c' || board[destX][destY] == 'd' ||
+        board[destX][destY] == 'e' || board[destX][destY] == 'f' ||
+        board[destX][destY] == 'g' || board[destX][destY] == 'h' ||
+        board[destX][destY] == '1' || board[destX][destY] == '2' ||
+        board[destX][destY] == '3' || board[destX][destY] == '4' ||
+        board[destX][destY] == '5' || board[destX][destY] == '6' ||
+        board[destX][destY] == '7' || board[destX][destY] == '8') {
+      return 0;
+    }
+  }
 
+  if (board[srcX][srcY] == 'k') {
+    if (turn == 0) {
+      return 0;
+    }
+    return willKingBeInCheck(board, kingX, kingY, destX, destY);
+  }
+
+  // Check specific rules for 'T' (rook-like piece)
+  if (board[srcX][srcY] == 'T') {
+    if (destX != srcX && destY != srcY) {
+      return 0;
+    }
+    if (board[destX][destY] == 'k' || board[destX][destY] == 'T' ||
+        board[destX][destY] == 'K' || board[destX][destY] == 'a' ||
+        board[destX][destY] == 'b' || board[destX][destY] == 'c' ||
+        board[destX][destY] == 'd' || board[destX][destY] == 'e' ||
+        board[destX][destY] == 'f' || board[destX][destY] == 'g' ||
+        board[destX][destY] == 'h' || board[destX][destY] == '1' ||
+        board[destX][destY] == '2' || board[destX][destY] == '3' ||
+        board[destX][destY] == '4' || board[destX][destY] == '5' ||
+        board[destX][destY] == '6' || board[destX][destY] == '7' ||
+        board[destX][destY] == '8') {
+      return 0;
+    }
+    if (turn == 1) {
+      return 0;
+    }
+    if (srcY == destY) {
+      int temp = (srcX > destX) ? -1 : 1;
+      for (int i = srcX + temp; i != destX; i += temp) {
+        if (board[i][srcY] != '.') {
+          return 0;
+        }
+      }
+    } else if (srcX == destX) {
+      int temp = (srcY > destY) ? -1 : 1;
+      for (int i = srcY + temp; i != destY; i += temp) {
+        if (board[srcX][i] != '.') {
+          return 0;
+        }
+      }
+    }
+  }
+
+  // Simulate the move to check if it leaves own king in check
+  char temp = board[destX][destY];
+  board[destX][destY] = board[srcX][srcY];
+  board[srcX][srcY] = '.';
+
+  // Find the position of the own king
+  int kingX = -1, kingY = -1;
+  for (int i = 0; i < size; i++) {
+    for (int j = 0; j < size; j++) {
+      if ((turn == 0 && board[i][j] == 'K') ||
+          (turn == 1 && board[i][j] == 'k')) {
+        kingX = i;
+        kingY = j;
+        break;
+      }
+    }
+    if (kingX != -1)
+      break;
+  }
+
+  // Undo the move
+  board[srcX][srcY] = board[destX][destY];
+  board[destX][destY] = temp;
+
+  return 1;
+}
 
 int checkForCheckMate(char **board, int kX, int kY, int deX, int deY, int sX,
                       int sY) {
@@ -545,7 +542,73 @@ int checkForCheckMate(char **board, int kX, int kY, int deX, int deY, int sX,
         return 1;
     }
   }
-  return 0;
+  if(isKingInCheck(board, kX, kY) == 0) {
+    if (board[kX - 1][kY - 1] == '.' || board[kX - 1][kY - 1] == 'T') {
+      int dX = kX - 1;
+      int dY = kY - 1;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+    if (board[kX - 1][kY] == '.' || board[kX - 1][kY] == 'T') {
+      int dX = kX - 1;
+      int dY = kY;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+    if (board[kX - 1][kY + 1] == '.' || board[kX - 1][kY + 1] == 'T') {
+      int dX = kX - 1;
+      int dY = kY + 1;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+    if (board[kX][kY - 1] == '.' || board[kX][kY - 1] == 'T') {
+      int dX = kX;
+      int dY = kY - 1;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+    if (board[kX][kY + 1] == '.' || board[kX][kY + 1] == 'T') {
+      int dX = kX;
+      int dY = kY + 1;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+    if (board[kX + 1][kY - 1] == '.' || board[kX + 1][kY - 1] == 'T') {
+      int dX = kX + 1;
+      int dY = kY - 1;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+    if (board[kX + 1][kY] == '.' || board[kX + 1][kY] == 'T') {
+      int dX = kX + 1;
+      int dY = kY;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+    if (board[kX + 1][kY + 1] == '.' || board[kX + 1][kY + 1] == 'T') {
+      int dX = kX + 1;
+      int dY = kY + 1;
+      if (willKingBeInCheck(board, kX, kY, dX, dY) == 1 &&
+          !will_kings_touch(board, dX, dY, kX, kY))
+        return 1;
+    }
+  }
+
+  if(isKingInCheck(board, kX, kY) == 1) {
+    return 0; 
+  } 
+
+  if(isKingInCheck(board, kX, kY) == 0) {
+    return 2;
+  }
+  
 }
 
 void locateWhiteKing(char **board, int KingX, int KingY) {
@@ -661,10 +724,10 @@ int evaluate(char **board, int size) {
     for (int j = 0; j < size; j++) {
       if (board[i][j] == 'T') {
         score += 5;
-      } else if (board[i][j] == 'K') {
-        score += 10;
-      } else if (board[i][j] == 'k') {
-        score -= 10;
+        // } else if (board[i][j] == 'K') {
+        //   score += 10;
+        // } else if (board[i][j] == 'k') {
+        //   score -= 10;
       }
     }
   }
@@ -672,7 +735,6 @@ int evaluate(char **board, int size) {
 }
 
 Move *generateMoves(char **board, int size, int turn, int *numMoves) {
-
   int maxMoves = size * size;
   Move *moves = malloc(maxMoves * sizeof(Move));
   *numMoves = 0;
@@ -690,7 +752,6 @@ Move *generateMoves(char **board, int size, int turn, int *numMoves) {
               continue;
             }
             if (isValidMove(board, i, j, destX, destY, turn, size)) {
-
               moves[*numMoves].srcX = i;
               moves[*numMoves].srcY = j;
               moves[*numMoves].destX = destX;
@@ -781,9 +842,15 @@ Move findBestMove(char **board, int size, int depth, int turn) {
 
   for (int i = 0; i < numMoves; i++) {
 
+    printf("Considering move #%d: From (%d, %d) to (%d, %d)\n", i + 1,
+           moves[i].srcX, moves[i].srcY, moves[i].destX, moves[i].destY);
+
     char **newBoard = applyMove(board, moves[i], size);
+    printBoard(newBoard);
+    printf("Applied move. Evaluating...\n");
 
     int eval = minimax(newBoard, size, depth, INT_MIN, INT_MAX, 0, 1 - turn);
+    printf("Evaluation for this move: %d\n", eval);
 
     if (eval < bestEvalBlack) {
       bestEvalBlack = eval;
@@ -809,8 +876,8 @@ Move findBestMove(char **board, int size, int depth, int turn) {
 }
 
 void Playing(char **board) {
-  int turn = 0; 
-  int end = 0;  
+  int turn = 0; // 0 for AI's turn, 1 for player's turn
+  int end = 0;  // Flag to end the game loop
 
   while (!end) {
     printBoard(board);
@@ -839,9 +906,15 @@ void Playing(char **board) {
           printf("\nCheckmate! AI wins.\n");
           printBoard(board);
           end = 1;
-        } else {
+        }else {
 
           printf("\nCheck!\n");
+        }
+      }
+      if(isKingInCheck(board, kingX, kingY) == 0) {
+        if(checkForCheckMate(board, kingX, kingY, aiMove.destX, aiMove.destY, aiMove.srcX, aiMove.srcY) == 2) {
+          printf("\nStalemate!\n");
+          end = 1;
         }
       }
 
